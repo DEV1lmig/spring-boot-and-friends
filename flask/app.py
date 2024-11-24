@@ -1,25 +1,30 @@
 from flask import Flask, request, jsonify
-from models import db, Cne
+from flask_cors import CORS
 
 app = Flask(__name__)
-app.config.from_object('config')
-db.init_app(app)
+CORS(app)
 
 @app.route('/buscar', methods=['GET'])
 def buscar():
-    query_params = request.args
-    cedula = query_params.get('cedula')
-    primer_nombre = query_params.get('primer_nombre')
-    nombre_completo = query_params.get('nombre_completo')
-    query = Cne.query
-    if cedula:
-        query = query.filter(Cne.cedula == cedula)
-    if primer_nombre:
-        query = query.filter(Cne.primer_nombre == primer_nombre)
-    if nombre_completo:
-        query = query.filter(Cne.nombre_completo.ilike(f"%{nombre_completo}%"))
-    results = query.all()
-    return jsonify([cne.to_dict() for cne in results])
+    cedula = request.args.get('cedula')
+    primer_nombre = request.args.get('primer_nombre')
+    nombre_completo = request.args.get('nombre_completo')
+
+    # Ejemplo de respuesta
+    response = {
+        "status": "success",
+        "data": {
+            "cedula": cedula,
+            "primer_nombre": primer_nombre,
+            "nombre_completo": nombre_completo
+        }
+    }
+
+    return jsonify(response)
+
+@app.route('/')
+def home():
+    return jsonify({"status": "Flask service is running"})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)

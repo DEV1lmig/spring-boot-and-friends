@@ -20,7 +20,7 @@ public class CneController {
     @Autowired
     private CneRepository cneRepository;
 
-    private final String FLASK_BASE_URL = "http://127.0.0.1:5000";
+    private final String FLASK_BASE_URL = "http://flask:5000";
 
     @GetMapping("/buscar")
       public ResponseEntity<String> buscar(@RequestParam Map<String, String> queryParams) {
