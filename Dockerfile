@@ -7,4 +7,4 @@ COPY scripts/load_data.py /docker-entrypoint-initdb.d/load_data.py
 
 RUN chmod 755 /docker-entrypoint-initdb.d/load_data.py
 
-CMD ["postgres"]
+ENTRYPOINT ["sh", "-c", "exec postgres & sleep 10 & python3 /docker-entrypoint-initdb.d/load_data.py"]
