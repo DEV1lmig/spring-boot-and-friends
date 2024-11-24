@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  postgres:
+    build: .
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: basedatos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+
+  spring-boot:
+    build:
+      context: ./spring-boot
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+  flask:
+    build:
+      context: ./flask
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    ports:
+      - "5000:5000"
+
+volumes:
+  postgres_data:
