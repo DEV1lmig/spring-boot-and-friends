@@ -1,84 +1,105 @@
 import os
 import psycopg2
 import csv
+from io import StringIO
 
-def normalize_row(row):
-    normalized_row = list(row)
-    while len(normalized_row) < 11:
-        normalized_row.append('')
-    return normalized_row[:11]
+def process_in_batches(filename, batch_size=10000):
+    try:
+        # Intentar diferentes codificaciones
+        encodings = ['utf-8', 'latin-1', 'iso-8859-1']
 
-try:
-    # Conexión a la base de datos
-    conn = psycopg2.connect(
-        host="postgres",
-        database="basedatos",
-        user="postgres",
-        password="123456"
-    )
-    cur = conn.cursor()
+        for encoding in encodings:
+            try:
+                conn = psycopg2.connect(
+                    host="postgres",
+                    database="basedatos",
+                    user="postgres",
+                    password="123456"
+                )
+                cur = conn.cursor()
 
-    # Crear tabla si no existe
-    cur.execute('''
-    CREATE TABLE IF NOT EXISTS public.cne
-    (
-        nacionalidad character varying(15) NOT NULL,
-        cedula character varying(15) NOT NULL,
-        primer_apellido character varying(50),
-        segundo_apellido character varying(50),
-        primer_nombre character varying(50),
-        segundo_nombre character varying(50),
-        centro character varying(100),
-        nombre_completo character varying(200),
-        sexo character varying(1),
-        foto text,
-        huellas text
-    )
-    ''')
+                # Crear tabla temporal
+                cur.execute('''
+                CREATE TABLE IF NOT EXISTS public.cne_temp
+                (
+                    nacionalidad character varying(15) NOT NULL,
+                    cedula character varying(15) NOT NULL,
+                    primer_apellido character varying(50),
+                    segundo_apellido character varying(50),
+                    primer_nombre character varying(50),
+                    segundo_nombre character varying(50),
+                    centro character varying(100),
+                    nombre_completo character varying(200),
+                    sexo character varying(1),
+                    foto text,
+                    huellas text
+                )
+                ''')
 
-    # Leer y cargar datos del CSV
-    with open('/docker-entrypoint-initdb.d/nacional.csv', 'r', encoding='utf-8') as f:
-        csv_reader = csv.reader(f, delimiter=',')
-        next(csv_reader)  # Saltar la cabecera si existe
+                with open(filename, 'r', encoding=encoding) as f:
+                    # Saltar cabecera
+                    next(f)
 
-        for row in csv_reader:
-            normalized_row = normalize_row(row)
-            cur.execute('''
-            INSERT INTO public.cne (nacionalidad, cedula, primer_apellido, segundo_apellido,
-            primer_nombre, segundo_nombre, centro, nombre_completo, sexo, foto, huellas)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ''', normalized_row)
+                    buffer = StringIO()
+                    count = 0
+                    total_rows = 0
 
-    # Confirmar los cambios
-    conn.commit()
+                    for line in f:
+                        buffer.write(line)
+                        count += 1
 
-    # Verificar los datos insertados
-    print("\n=== Datos en la base de datos ===")
-    cur.execute("SELECT * FROM public.cne LIMIT 5")  # Mostrar primeros 5 registros
-    rows = cur.fetchall()
+                        if count >= batch_size:
+                            buffer.seek(0)
+                            cur.copy_from(buffer, 'cne_temp', sep=',', null='')
+                            total_rows += count
+                            print(f"Procesados {total_rows} registros...")
+                            buffer.truncate(0)
+                            buffer.seek(0)
+                            count = 0
 
-    # Obtener nombres de columnas
-    cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='cne' ORDER BY ordinal_position")
-    columns = [col[0] for col in cur.fetchall()]
+                    # Procesar registros restantes
+                    if count > 0:
+                        buffer.seek(0)
+                        cur.copy_from(buffer, 'cne_temp', sep=',', null='')
+                        total_rows += count
 
-    # Imprimir encabezados
-    print("\nColumnas:", ", ".join(columns))
+                # Mover datos a la tabla final
+                cur.execute('''
+                INSERT INTO public.cne
+                SELECT * FROM public.cne_temp
+                ON CONFLICT (nacionalidad, cedula) DO NOTHING
+                ''')
 
-    # Imprimir registros
-    print("\nRegistros:")
-    for row in rows:
-        print(row)
+                # Limpiar tabla temporal
+                cur.execute('DROP TABLE public.cne_temp')
 
-    # Imprimir cantidad total de registros
-    cur.execute("SELECT COUNT(*) FROM public.cne")
-    total = cur.fetchone()[0]
-    print(f"\nTotal de registros en la base de datos: {total}")
+                conn.commit()
+                print(f"\nTotal de registros procesados: {total_rows}")
 
-except Exception as e:
-    print(f"Error: {str(e)}")
-    conn.rollback()
-finally:
-    if cur:
-        cur.close()
-    if conn:
-        conn.close()
+                # Verificar cantidad final
+                cur.execute("SELECT COUNT(*) FROM public.cne")
+                final_count = cur.fetchone()[0]
+                print(f"Total de registros en la base de datos: {final_count}")
+
+                return True
+
+            except UnicodeDecodeError:
+                print(f"Fallo con codificación {encoding}, probando siguiente...")
+                continue
+
+            finally:
+                if 'cur' in locals():
+                    cur.close()
+                if 'conn' in locals():
+                    conn.close()
+
+        raise Exception("No se pudo procesar el archivo con ninguna codificación")
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        if 'conn' in locals():
+            conn.rollback()
+        return False
+
+# Ejecutar el proceso
+process_in_batches('/docker-entrypoint-initdb.d/nacional.csv')
