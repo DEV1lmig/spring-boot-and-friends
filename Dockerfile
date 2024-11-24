@@ -4,7 +4,7 @@ FROM postgres:13
 RUN apt-get update && apt-get install -y python3 python3-psycopg2
 
 # Copiar archivos
-COPY scripts/nacional.csv /docker-entrypoint-initdb.d/nacional.csv
+COPY nacional.csv /docker-entrypoint-initdb.d/nacional.csv
 COPY scripts/load_data.py /docker-entrypoint-initdb.d/load_data.py
 
 # Crear script de inicio
