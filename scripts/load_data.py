@@ -3,7 +3,6 @@ import psycopg2
 import csv
 
 def normalize_row(row):
-    # Aseguramos tener 11 campos, rellenando con valores vacíos si faltan
     normalized_row = list(row)
     while len(normalized_row) < 11:
         normalized_row.append('')
@@ -52,6 +51,28 @@ try:
 
     # Confirmar los cambios
     conn.commit()
+
+    # Verificar los datos insertados
+    print("\n=== Datos en la base de datos ===")
+    cur.execute("SELECT * FROM public.cne LIMIT 5")  # Mostrar primeros 5 registros
+    rows = cur.fetchall()
+
+    # Obtener nombres de columnas
+    cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='cne' ORDER BY ordinal_position")
+    columns = [col[0] for col in cur.fetchall()]
+
+    # Imprimir encabezados
+    print("\nColumnas:", ", ".join(columns))
+
+    # Imprimir registros
+    print("\nRegistros:")
+    for row in rows:
+        print(row)
+
+    # Imprimir cantidad total de registros
+    cur.execute("SELECT COUNT(*) FROM public.cne")
+    total = cur.fetchone()[0]
+    print(f"\nTotal de registros en la base de datos: {total}")
 
 except Exception as e:
     print(f"Error: {str(e)}")
