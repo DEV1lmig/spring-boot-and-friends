@@ -30,7 +30,6 @@ def process_in_batches(filename, batch_size=10000):
                     segundo_nombre character varying(50),
                     centro character varying(100),
                     nombre_completo character varying(200),
-                    sexo character varying(1),
                     foto text,
                     huellas text
                 )
