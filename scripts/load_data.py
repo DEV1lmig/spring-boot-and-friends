@@ -2,6 +2,13 @@ import os
 import psycopg2
 import csv
 
+def normalize_row(row):
+    # Aseguramos tener 11 campos, rellenando con valores vacíos si faltan
+    normalized_row = list(row)
+    while len(normalized_row) < 11:
+        normalized_row.append('')
+    return normalized_row[:11]
+
 try:
     # Conexión a la base de datos
     conn = psycopg2.connect(
@@ -36,14 +43,12 @@ try:
         next(csv_reader)  # Saltar la cabecera si existe
 
         for row in csv_reader:
-            if len(row) >= 11:  # Verificar que la fila tenga todos los campos necesarios
-                cur.execute('''
-                INSERT INTO public.cne (nacionalidad, cedula, primer_apellido, segundo_apellido,
-                primer_nombre, segundo_nombre, centro, nombre_completo, sexo, foto, huellas)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ''', row[:11])
-            else:
-                print(f"Fila ignorada por falta de datos: {row}")
+            normalized_row = normalize_row(row)
+            cur.execute('''
+            INSERT INTO public.cne (nacionalidad, cedula, primer_apellido, segundo_apellido,
+            primer_nombre, segundo_nombre, centro, nombre_completo, sexo, foto, huellas)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''', normalized_row)
 
     # Confirmar los cambios
     conn.commit()
