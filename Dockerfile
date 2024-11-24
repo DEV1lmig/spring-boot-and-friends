@@ -1,7 +1,7 @@
 FROM postgres:13
 
 # Instalar Python y dependencias
-RUN apt-get update && apt-get install -y python3 python3-psycopg2
+RUN apt-get update && apt-get install -y python3 python3-psycopg2 python3-psutil
 
 # Copiar archivos
 COPY nacional.csv /docker-entrypoint-initdb.d/nacional.csv
