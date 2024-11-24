@@ -6,11 +6,12 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - /data/dev1mig/db:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: basedatos
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123456
+    user: postgres
 
   spring-boot:
     build:
