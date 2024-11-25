@@ -5,6 +5,8 @@ import com.example.model.CneFotos;
 import com.example.repository.CneRepository;
 import com.example.repository.CneFotosRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -19,95 +21,145 @@ import com.example.exception.ResourceNotFoundException;
 public class CneController {
     @Autowired
     private CneRepository cneRepository;
-
     private final String FLASK_BASE_URL = "http://flask:5000";
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @GetMapping("/buscar")
-      public ResponseEntity<String> buscar(@RequestParam Map<String, String> queryParams) {
-          // Obtén los datos necesarios de la base de datos
-          String cedula = (String) queryParams.get("cedula");
-          String primerNombre = (String) queryParams.get("primer_nombre");
-          String nombreCompleto = (String) queryParams.get("nombre_completo");
+    public ResponseEntity<String> buscar(@RequestParam Map<String, String> queryParams) {
+        // Construir la URL para la búsqueda en Flask
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(FLASK_BASE_URL + "/buscar");
 
-          // Construir la URL para la búsqueda en Flask
-          UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(FLASK_BASE_URL + "/buscar");
-          if (cedula != null) builder.queryParam("cedula", cedula);
-          if (primerNombre != null) builder.queryParam("primer_nombre", primerNombre);
-          if (nombreCompleto != null) builder.queryParam("nombre_completo", nombreCompleto);
-
-          // Realizar la solicitud a Flask
-          RestTemplate restTemplate = new RestTemplate();
-          ResponseEntity<String> response = restTemplate.getForEntity(builder.toUriString(), String.class);
-
-          // Devolver la respuesta de Flask al usuario
-          return ResponseEntity.ok(response.getBody());
-      }
-
-      @GetMapping
-      public List<Cne> getAll() {
-          return cneRepository.findAll().stream().map(cne -> (Cne) cne).collect(Collectors.toList());
-      }
-
-      @PostMapping
-      public Cne create(@RequestBody Cne cne) {
-          return cneRepository.save(cne);
-      }
-
-      @GetMapping("/{id}")
-      public Cne getById(@PathVariable Long id) {
-          return cneRepository.findById(id).orElseThrow(() ->
-              new ResourceNotFoundException("Cne not found with id " + id));
-      }
-      public class CneFotosController {
-        @Autowired
-        private CneFotosRepository cneFotosRepository;
-
-        @GetMapping
-        public List<CneFotos> getAll() {
-            return cneFotosRepository.findAll();
+        // Agregar todos los parámetros de búsqueda disponibles
+        if (queryParams.containsKey("cedula")) {
+            builder.queryParam("cedula", queryParams.get("cedula"));
+        }
+        if (queryParams.containsKey("primer_nombre")) {
+            builder.queryParam("primer_nombre", queryParams.get("primer_nombre"));
+        }
+        if (queryParams.containsKey("nombre_completo")) {
+            builder.queryParam("nombre_completo", queryParams.get("nombre_completo"));
         }
 
-        @PostMapping
-        public CneFotos create(@RequestBody CneFotos cneFotos) {
-            return (CneFotos) cneFotosRepository.save(cneFotos);
-        }
+        ResponseEntity<String> response = restTemplate.getForEntity(builder.toUriString(), String.class);
 
-        @GetMapping("/{id}")
-        public CneFotos getById(@PathVariable Long id) {
-            return cneFotosRepository.findById(id).orElseThrow(() ->
-                new ResourceNotFoundException("CneFotos not found with id " + id));
-        }
-
-        // Métodos adicionales para update y delete
-        @PutMapping("/cne/{id}")
-        public Cne actualizarCne(@PathVariable Long id, @RequestBody Cne detallesCne) {
-            Cne cne = cneRepository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("CNE no encontrado con id: " + id));
-
-            cne.setNacionalidad(detallesCne.getNacionalidad());
-            cne.setCedula(detallesCne.getCedula());
-            cne.setPrimerApellido(detallesCne.getPrimerApellido());
-            cne.setSegundoApellido(detallesCne.getSegundoApellido());
-            cne.setPrimerNombre(detallesCne.getPrimerNombre());
-            cne.setSegundoNombre(detallesCne.getSegundoNombre());
-            cne.setCentro(detallesCne.getCentro());
-            cne.setNombreCompleto(detallesCne.getNombreCompleto());
-            cne.setSexo(detallesCne.getSexo());
-            cne.setFoto(detallesCne.getFoto());
-            cne.setHuellas(detallesCne.getHuellas());
-
-            return cneRepository.save(cne);
-        }
-
-        // Método para eliminar un CNE existente
-        @DeleteMapping("/cne/{id}")
-        public ResponseEntity<?> eliminarCne(@PathVariable Long id) {
-            Cne cne = cneRepository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("CNE no encontrado con id: " + id));
-
-            cneRepository.delete(cne);
-
-            return ResponseEntity.ok().build();
-        }
-      }
+        return ResponseEntity.ok(response.getBody());
     }
+
+    @GetMapping("/cne")
+    public ResponseEntity<String> getAll() {
+        try {
+            return restTemplate.getForEntity(FLASK_BASE_URL + "/cne", String.class);
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("CNE", "operación", "getAll");
+        }
+    }
+
+
+   @GetMapping("/cne/{id}")
+    public ResponseEntity<String> getById(@PathVariable Long id) {
+        try {
+            return restTemplate.getForEntity(FLASK_BASE_URL + "/cne/" + id, String.class);
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("CNE", "id", id);
+        }
+    }
+
+    @PostMapping("/cne")
+    public ResponseEntity<String> create(@RequestBody Cne cne) {
+        try {
+            return restTemplate.postForEntity(FLASK_BASE_URL + "/cne", cne, String.class);
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("CNE", "operación", "create");
+        }
+    }
+
+    @PutMapping("/cne/{id}")
+    public ResponseEntity<String> actualizarCne(@PathVariable Long id, @RequestBody Cne cne) {
+        try {
+            return restTemplate.exchange(
+                FLASK_BASE_URL + "/cne/" + id,
+                HttpMethod.PUT,
+                new HttpEntity<>(cne),
+                String.class
+            );
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("CNE", "id", id);
+        }
+    }
+
+    @DeleteMapping("/cne/{id}")
+    public ResponseEntity<String> eliminarCne(@PathVariable Long id) {
+        try {
+            return restTemplate.exchange(
+                FLASK_BASE_URL + "/cne/" + id,
+                HttpMethod.DELETE,
+                null,
+                String.class
+            );
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("CNE", "id", id);
+        }
+    }
+
+    @RestController
+@RequestMapping("/api/fotos")
+public class CneFotosController {
+    private final String FLASK_BASE_URL = "http://flask:5000";
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @GetMapping
+    public ResponseEntity<String> getAll() {
+        try {
+            return restTemplate.getForEntity(FLASK_BASE_URL + "/fotos", String.class);
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("CNE_FOTOS", "listado", "no disponible");
+        }
+    }
+
+    @GetMapping("/cneFotos/{id}")
+    public ResponseEntity<String> getById(@PathVariable Long id) {
+        try {
+            return restTemplate.getForEntity(FLASK_BASE_URL + "/fotos/" + id, String.class);
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("CNE_FOTOS", "id", id);
+        }
+    }
+
+    @PostMapping("/cneFotos")
+    public ResponseEntity<String> create(@RequestBody CneFotos foto) {
+        try {
+            return restTemplate.postForEntity(FLASK_BASE_URL + "/fotos", foto, String.class);
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("CNE_FOTOS", "creación", "fallida");
+        }
+    }
+
+    @PutMapping("/cneFots/{id}")
+    public ResponseEntity<String> update(@PathVariable Long id, @RequestBody CneFotos foto) {
+        try {
+            return restTemplate.exchange(
+                FLASK_BASE_URL + "/fotos/" + id,
+                HttpMethod.PUT,
+                new HttpEntity<>(foto),
+                String.class
+            );
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("CNE_FOTOS", "id", id);
+        }
+    }
+
+    @DeleteMapping("/cneFotos/{id}")
+    public ResponseEntity<String> delete(@PathVariable Long id) {
+        try {
+            return restTemplate.exchange(
+                FLASK_BASE_URL + "/fotos/" + id,
+                HttpMethod.DELETE,
+                null,
+                String.class
+            );
+        } catch (Exception e) {
+            throw new ResourceNotFoundException("CNE_FOTOS", "id", id);
+        }
+    }
+}
+}
