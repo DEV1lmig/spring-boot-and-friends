@@ -1,6 +1,7 @@
 package com.example.model;
 
 import  jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 
 @Entity
 @Table(name = "cne")
@@ -9,17 +10,41 @@ public class Cne {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "nacionalidad", nullable = false)
+    @NotBlank(message = "Nacionalidad es obligatoria")
     private String nacionalidad;
+
+    @Column(name = "cedula", nullable = false)
+    @NotBlank(message = "Cédula es obligatoria")
     private String cedula;
-    private String primerApellido;
-    private String segundoApellido;
-    private String primerNombre;
-    private String segundoNombre;
+
+    @Column(name = "primer_apellido")
+    private String primer_apellido;
+
+    @Column(name = "segundo_apellido")
+    private String segundo_apellido;
+
+    @Column(name = "primer_nombre")
+    private String primer_nombre;
+
+    @Column(name = "segundo_nombre")
+    private String segundo_nombre;
+
+    @Column(name = "centro")
     private String centro;
-    private String nombreCompleto;
+
+    @Column(name = "nombre_completo")
+    private String nombre_completo; 
+
+    @Column(name = "sexo")
     private String sexo;
+
+    @Column(name = "foto")
     private String foto;
+
+    @Column(name = "huellas")
     private String huellas;
+
 
     // Getters y Setters
         public String getNacionalidad() {
@@ -39,35 +64,35 @@ public class Cne {
     }
 
     public String getPrimerApellido() {
-        return primerApellido;
+        return primer_apellido;
     }
 
-    public void setPrimerApellido(String primerApellido) {
-        this.primerApellido = primerApellido;
+    public void setPrimerApellido(String primer_apellido) {
+        this.primer_apellido = primer_apellido;
     }
 
     public String getSegundoApellido() {
-        return segundoApellido;
+        return segundo_apellido;
     }
 
-    public void setSegundoApellido(String segundoApellido) {
-        this.segundoApellido = segundoApellido;
+    public void setSegundoApellido(String segundo_apellido) {
+        this.segundo_apellido = segundo_apellido;
     }
 
     public String getPrimerNombre() {
-        return primerNombre;
+        return primer_nombre;
     }
 
-    public void setPrimerNombre(String primerNombre) {
-        this.primerNombre = primerNombre;
+    public void setPrimerNombre(String primer_nombre) {
+        this.primer_nombre = primer_nombre;
     }
 
     public String getSegundoNombre() {
-        return segundoNombre;
+        return segundo_nombre;
     }
 
-    public void setSegundoNombre(String segundoNombre) {
-        this.segundoNombre = segundoNombre;
+    public void setSegundoNombre(String segundo_nombre) {
+        this.segundo_nombre = segundo_nombre;
     }
 
     public String getCentro() {
@@ -79,11 +104,11 @@ public class Cne {
     }
 
     public String getNombreCompleto() {
-        return nombreCompleto;
+        return nombre_completo;
     }
 
-    public void setNombreCompleto(String nombreCompleto) {
-        this.nombreCompleto = nombreCompleto;
+    public void setNombreCompleto(String nombre_completo) {
+        this.nombre_completo = nombre_completo;
     }
 
     public String getSexo() {
@@ -109,4 +134,5 @@ public class Cne {
     public void setHuellas(String huellas) {
         this.huellas = huellas;
     }
+    public Cne() {}
 }
