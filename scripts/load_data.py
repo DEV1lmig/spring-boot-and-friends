@@ -1,84 +1,67 @@
-import os
 import psycopg2
 import csv
+from werkzeug.security import generate_password_hash
 
-def normalize_row(row):
-    normalized_row = list(row)
-    while len(normalized_row) < 11:
-        normalized_row.append('')
-    return normalized_row[:11]
-
-try:
-    # Conexión a la base de datos
+def load_data():
     conn = psycopg2.connect(
-        host="postgres",
-        database="basedatos",
+        dbname="basedatos",
         user="postgres",
-        password="123456"
+        password="123456",
+        host="postgres"
     )
     cur = conn.cursor()
 
-    # Crear tabla si no existe
+    # Crear tabla 'cne' si no existe
     cur.execute('''
-    CREATE TABLE IF NOT EXISTS public.cne
-    (
-        nacionalidad character varying(15) NOT NULL,
-        cedula character varying(15) NOT NULL,
-        primer_apellido character varying(50),
-        segundo_apellido character varying(50),
-        primer_nombre character varying(50),
-        segundo_nombre character varying(50),
-        centro character varying(100),
-        nombre_completo character varying(200),
-        sexo character varying(1),
-        foto text,
-        huellas text
-    )
+        CREATE TABLE IF NOT EXISTS cne (
+            id BIGSERIAL PRIMARY KEY,
+            nacionalidad VARCHAR(15) NOT NULL,
+            cedula VARCHAR(15) NOT NULL,
+            primer_apellido VARCHAR(50),
+            segundo_apellido VARCHAR(50),
+            primer_nombre VARCHAR(50),
+            segundo_nombre VARCHAR(50),
+            centro VARCHAR(50),
+            nombre_completo VARCHAR(125),
+            sexo VARCHAR(1),
+            foto TEXT,
+            huellas TEXT
+        );
     ''')
 
-    # Leer y cargar datos del CSV
-    with open('/docker-entrypoint-initdb.d/nacional.csv', 'r', encoding='utf-8') as f:
-        csv_reader = csv.reader(f, delimiter=',')
-        next(csv_reader)  # Saltar la cabecera si existe
+    # Crear tabla 'usuarios' si no existe
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(80) UNIQUE NOT NULL,
+            password_hash VARCHAR(128) NOT NULL,
+            role VARCHAR(80) NOT NULL
+        );
+    ''')
 
-        for row in csv_reader:
-            normalized_row = normalize_row(row)
-            cur.execute('''
-            INSERT INTO public.cne (nacionalidad, cedula, primer_apellido, segundo_apellido,
-            primer_nombre, segundo_nombre, centro, nombre_completo, sexo, foto, huellas)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ''', normalized_row)
+    # Insertar usuario 'admin' si no existe
+    cur.execute("SELECT * FROM usuarios WHERE username='admin';")
+    if not cur.fetchone():
+        password_hash = generate_password_hash('admin123')
+        cur.execute(
+            "INSERT INTO usuarios (username, password_hash, role) VALUES (%s, %s, %s);",
+            ('admin', password_hash, 'admin')
+        )
+        print("Usuario 'admin' creado exitosamente.")
 
-    # Confirmar los cambios
+    # Cargar datos desde CSV en la tabla 'cne'
+    with open('/docker-entrypoint-initdb.d/nacional.csv', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        next(reader)  # Saltar encabezado
+        for row in reader:
+            cur.execute(
+                "INSERT INTO cne (nacionalidad, cedula, primer_apellido, segundo_apellido, primer_nombre, segundo_nombre, centro, nombre_completo, sexo, foto, huellas) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);",
+                row
+            )
+
     conn.commit()
+    cur.close()
+    conn.close()
 
-    # Verificar los datos insertados
-    print("\n=== Datos en la base de datos ===")
-    cur.execute("SELECT * FROM public.cne LIMIT 5")  # Mostrar primeros 5 registros
-    rows = cur.fetchall()
-
-    # Obtener nombres de columnas
-    cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='cne' ORDER BY ordinal_position")
-    columns = [col[0] for col in cur.fetchall()]
-
-    # Imprimir encabezados
-    print("\nColumnas:", ", ".join(columns))
-
-    # Imprimir registros
-    print("\nRegistros:")
-    for row in rows:
-        print(row)
-
-    # Imprimir cantidad total de registros
-    cur.execute("SELECT COUNT(*) FROM public.cne")
-    total = cur.fetchone()[0]
-    print(f"\nTotal de registros en la base de datos: {total}")
-
-except Exception as e:
-    print(f"Error: {str(e)}")
-    conn.rollback()
-finally:
-    if cur:
-        cur.close()
-    if conn:
-        conn.close()
+if __name__ == '__main__':
+    load_data()

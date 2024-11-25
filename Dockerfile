@@ -1,7 +1,7 @@
 FROM postgres:13
 
 # Instalar Python y dependencias
-RUN apt-get update && apt-get install -y python3 python3-psycopg2 python3-psutil
+RUN apt-get update && apt-get install -y python3 python3-psycopg2 python3-werkzeug
 
 # Copiar archivos
 COPY nacional.csv /docker-entrypoint-initdb.d/nacional.csv
@@ -19,7 +19,7 @@ wait' > /start.sh
 
 # Dar permisos necesarios
 RUN chmod +x /start.sh
-RUN chmod 755 /docker-entrypoint-initdb.d/load_data.py
+RUN chmod +x /docker-entrypoint-initdb.d/load_data.py
 
 # Usar el script de inicio
 CMD ["/start.sh"]

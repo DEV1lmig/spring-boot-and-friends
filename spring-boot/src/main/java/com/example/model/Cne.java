@@ -19,22 +19,22 @@ public class Cne {
     private String cedula;
 
     @Column(name = "primer_apellido")
-    private String primer_apellido;
+    private String primerApellido;
 
     @Column(name = "segundo_apellido")
-    private String segundo_apellido;
+    private String segundoApellido;
 
     @Column(name = "primer_nombre")
-    private String primer_nombre;
+    private String primerNombre;
 
     @Column(name = "segundo_nombre")
-    private String segundo_nombre;
+    private String segundoNombre;
 
     @Column(name = "centro")
     private String centro;
 
     @Column(name = "nombre_completo")
-    private String nombre_completo; 
+    private String nombreCompleto;
 
     @Column(name = "sexo")
     private String sexo;
@@ -64,35 +64,35 @@ public class Cne {
     }
 
     public String getPrimerApellido() {
-        return primer_apellido;
+        return primerApellido;
     }
 
-    public void setPrimerApellido(String primer_apellido) {
-        this.primer_apellido = primer_apellido;
+    public void setPrimerApellido(String primerApellido) {
+        this.primerApellido = primerApellido;
     }
 
     public String getSegundoApellido() {
-        return segundo_apellido;
+        return segundoApellido;
     }
 
-    public void setSegundoApellido(String segundo_apellido) {
-        this.segundo_apellido = segundo_apellido;
+    public void setSegundoApellido(String segundoApellido) {
+        this.segundoApellido = segundoApellido;
     }
 
     public String getPrimerNombre() {
-        return primer_nombre;
+        return primerNombre;
     }
 
-    public void setPrimerNombre(String primer_nombre) {
-        this.primer_nombre = primer_nombre;
+    public void setPrimerNombre(String primerNombre) {
+        this.primerNombre = primerNombre;
     }
 
     public String getSegundoNombre() {
-        return segundo_nombre;
+        return segundoNombre;
     }
 
-    public void setSegundoNombre(String segundo_nombre) {
-        this.segundo_nombre = segundo_nombre;
+    public void setSegundoNombre(String segundoNombre) {
+        this.segundoNombre = segundoNombre;
     }
 
     public String getCentro() {
@@ -104,11 +104,11 @@ public class Cne {
     }
 
     public String getNombreCompleto() {
-        return nombre_completo;
+        return nombreCompleto;
     }
 
-    public void setNombreCompleto(String nombre_completo) {
-        this.nombre_completo = nombre_completo;
+    public void setNombreCompleto(String nombreCompleto) {
+        this.nombreCompleto = nombreCompleto;
     }
 
     public String getSexo() {
