@@ -72,27 +72,22 @@ def get_all():
         'huellas': cne.huellas
     } for cne in cnes])
 
-@app.route('/cne/<int:id>', methods=['GET'])
-def get_by_id(id):
-    cne = Cne.query.get_or_404(id)
-    return jsonify({
-        'id': cne.id,
-        'nacionalidad': cne.nacionalidad,
-        'cedula': cne.cedula,
-        'primer_apellido': cne.primer_apellido,
-        'segundo_apellido': cne.segundo_apellido,
-        'primer_nombre': cne.primer_nombre,
-        'segundo_nombre': cne.segundo_nombre,
-        'centro': cne.centro,
-        'nombre_completo': cne.nombre_completo,
-        'sexo': cne.sexo,
-        'foto': cne.foto,
-        'huellas': cne.huellas
-    })
 @app.route('/cne', methods=['POST'])
 def create():
     data = request.get_json()
-    cne = Cne(
+    print("Received data:", data)  # Log the received data
+
+    # Ensure all fields are present
+    required_fields = [
+        'nacionalidad', 'cedula', 'primer_apellido', 'segundo_apellido',
+        'primer_nombre', 'segundo_nombre', 'centro', 'nombre_completo',
+        'sexo', 'foto', 'huellas'
+    ]
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'error': f'Missing field: {field}'}), 400
+
+    new_cne = Cne(
         nacionalidad=data.get('nacionalidad'),
         cedula=data.get('cedula'),
         primer_apellido=data.get('primer_apellido'),
@@ -105,13 +100,24 @@ def create():
         foto=data.get('foto'),
         huellas=data.get('huellas')
     )
-    db.session.add(cne)
+    db.session.add(new_cne)
     db.session.commit()
-    return jsonify({
-        'mensaje': 'CNE creado exitosamente',
-        'id': cne.id
-    }), 201
 
+    return jsonify({
+        'id': new_cne.id,
+        'nacionalidad': new_cne.nacionalidad,
+        'cedula': new_cne.cedula,
+        'primer_apellido': new_cne.primer_apellido,
+        'segundo_apellido': new_cne.segundo_apellido,
+        'primer_nombre': new_cne.primer_nombre,
+        'segundo_nombre': new_cne.segundo_nombre,
+        'centro': new_cne.centro,
+        'nombre_completo': new_cne.nombre_completo,
+        'sexo': new_cne.sexo,
+        'foto': new_cne.foto,
+        'huellas': new_cne.huellas
+    }), 201
+    
 @app.route('/cne/<int:id>', methods=['PUT'])
 def update(id):
     cne = Cne.query.get_or_404(id)
