@@ -3,6 +3,7 @@ version: '3.8'
 services:
   postgres:
     build: .
+    image: dev1mig/springboot-and-friends-postgres:latest
     ports:
       - "5432:5432"
     volumes:
@@ -17,6 +18,7 @@ services:
     build:
       context: ./spring-boot
       dockerfile: Dockerfile
+    image: dev1mig/springboot-and-friends-spring:latest
     depends_on:
       - postgres
     ports:
@@ -25,6 +27,7 @@ services:
     build:
       context: ./flask
       dockerfile: Dockerfile
+    image: dev1mig/springboot-and-friends-flask:latest
     depends_on:
       - postgres
     ports:
