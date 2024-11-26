@@ -34,7 +34,7 @@ def load_data():
         CREATE TABLE IF NOT EXISTS usuarios (
             id SERIAL PRIMARY KEY,
             username VARCHAR(80) UNIQUE NOT NULL,
-            password_hash VARCHAR(128) NOT NULL,
+            password_hash VARCHAR(1024) NOT NULL,
             role VARCHAR(80) NOT NULL
         );
     ''')
