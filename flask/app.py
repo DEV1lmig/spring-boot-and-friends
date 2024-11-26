@@ -90,7 +90,8 @@ def buscar():
                 "nombre_completo": resultado.nombre_completo,
                 "sexo": resultado.sexo,
                 "foto": resultado.foto,
-                "huellas": resultado.huellas
+                "huellas": resultado.huellas,
+                "fotos": resultado.fotos
             }
         }
     else:

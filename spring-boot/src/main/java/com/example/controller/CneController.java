@@ -1,9 +1,7 @@
 package com.example.controller;
 
 import com.example.model.Cne;
-import com.example.model.CneFotos;
 import com.example.repository.CneRepository;
-import com.example.repository.CneFotosRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -13,8 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
-import org.springframework.beans.BeanUtils;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
@@ -58,75 +56,112 @@ public class CneController {
     @GetMapping("/cne")
     public ResponseEntity<List<Cne>> getAll(@RequestHeader("Authorization") String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido");
-    }
-
-    HttpHeaders headers = new HttpHeaders();
-    headers.set("Authorization", authHeader);
-
-    HttpEntity<?> entity = new HttpEntity<>(headers);
-
-    try {
-        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-            FLASK_BASE_URL + "/validate-token",
-            HttpMethod.GET,
-            entity,
-            new ParameterizedTypeReference<Map<String, Object>>() {});
-
-        Map<String, Object> responseBody = response.getBody();
-        if (responseBody == null || !Boolean.TRUE.equals(responseBody.get("valid"))) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido");
         }
-    } catch (Exception e) {
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Error de autenticación");
-    }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", authHeader);
+
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    FLASK_BASE_URL + "/validate-token",
+                    HttpMethod.GET,
+                    entity,
+                    new ParameterizedTypeReference<Map<String, Object>>() {
+                    });
+
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody == null || !Boolean.TRUE.equals(responseBody.get("valid"))) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido");
+            }
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Error de autenticación");
+        }
 
         return ResponseEntity.ok(cneRepository.findAll());
     }
 
     @GetMapping("/cne/{id}")
-    public ResponseEntity<Cne> getById(@PathVariable Long id, @RequestHeader("Authorization") String authHeader) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", authHeader);
-        HttpEntity<?> entity = new HttpEntity<>(headers);
+    public ResponseEntity<Map<String, Object>> getById(@PathVariable Long id,
+            @RequestHeader("Authorization") String authHeader) {
+        validateToken(authHeader);
+        Cne cne = cneRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("CNE", "id", id));
 
-        // Validar token con Flask primero
-        try {
-            restTemplate.exchange(
-                FLASK_BASE_URL + "/buscar",
-                HttpMethod.GET,
-                entity,
-                String.class
-            );
-        } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido");
-        }
+        // Crear respuesta con datos y fotos relacionadas
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", cne.getId());
+        response.put("nacionalidad", cne.getNacionalidad());
+        response.put("cedula", cne.getCedula());
+        response.put("primer_apellido", cne.getPrimerApellido());
+        response.put("segundo_apellido", cne.getSegundoApellido());
+        response.put("primer_nombre", cne.getPrimerNombre());
+        response.put("segundo_nombre", cne.getSegundoNombre());
+        response.put("centro", cne.getCentro());
+        response.put("nombre_completo", cne.getNombreCompleto());
+        response.put("sexo", cne.getSexo());
+        response.put("foto", cne.getFoto());
+        response.put("huellas", cne.getHuellas());
+        response.put("fotos", cne.getFotos()); // Incluir colección de fotos
 
-        return ResponseEntity.ok(cneRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("CNE", "id", id)));
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/cne")
     public ResponseEntity<Cne> create(@Valid @RequestBody Cne cne,
-    @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader("Authorization") String authHeader) {
         validateToken(authHeader);
         return ResponseEntity.status(201).body(cneRepository.save(cne));
     }
 
     @PutMapping("/cne/{id}")
-    public ResponseEntity<Cne> update(@PathVariable Long id, @Valid @RequestBody Cne cne,
-    @RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Map<String, Object>> update(@PathVariable Long id, @Valid @RequestBody Cne cne,
+            @RequestHeader("Authorization") String authHeader) {
         validateToken(authHeader);
+
         Cne existing = cneRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CNE", "id", id));
 
-        BeanUtils.copyProperties(cne, existing, "id");
-        return ResponseEntity.ok(cneRepository.save(existing));
+        // Actualizar campos
+        existing.setNacionalidad(cne.getNacionalidad());
+        existing.setCedula(cne.getCedula());
+        existing.setPrimerApellido(cne.getPrimerApellido());
+        existing.setSegundoApellido(cne.getSegundoApellido());
+        existing.setPrimerNombre(cne.getPrimerNombre());
+        existing.setSegundoNombre(cne.getSegundoNombre());
+        existing.setCentro(cne.getCentro());
+        existing.setNombreCompleto(cne.getNombreCompleto());
+        existing.setSexo(cne.getSexo());
+        existing.setFoto(cne.getFoto());
+        existing.setHuellas(cne.getHuellas());
+        existing.setFotos(cne.getFotos());
+
+        Cne updated = cneRepository.save(existing);
+
+        // Construir respuesta
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", updated.getId());
+        response.put("nacionalidad", updated.getNacionalidad());
+        response.put("cedula", updated.getCedula());
+        response.put("primer_apellido", updated.getPrimerApellido());
+        response.put("segundo_apellido", updated.getSegundoApellido());
+        response.put("primer_nombre", updated.getPrimerNombre());
+        response.put("segundo_nombre", updated.getSegundoNombre());
+        response.put("centro", updated.getCentro());
+        response.put("nombre_completo", updated.getNombreCompleto());
+        response.put("sexo", updated.getSexo());
+        response.put("foto", updated.getFoto());
+        response.put("huellas", updated.getHuellas());
+        response.put("fotos", updated.getFotos());
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/cne/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id,
-    @RequestHeader("Authorization") String authHeader) {
+            @RequestHeader("Authorization") String authHeader) {
         validateToken(authHeader);
         return cneRepository.findById(id)
                 .map(cne -> {
@@ -136,58 +171,6 @@ public class CneController {
                 .orElseThrow(() -> new ResourceNotFoundException("CNE", "id", id));
     }
 
-    @RestController
-    @RequestMapping("/api/fotos")
-    public class CneFotosController {
-
-        @Autowired
-        private CneFotosRepository cneFotosRepository;
-
-        @GetMapping
-        public ResponseEntity<List<CneFotos>> getAll(@RequestHeader("Authorization") String authHeader) {
-            validateToken(authHeader);
-            return ResponseEntity.ok(cneFotosRepository.findAll());
-        }
-
-        @GetMapping("/{id}")
-        public ResponseEntity<CneFotos> getById(@PathVariable Long id,
-        @RequestHeader("Authorization") String authHeader
-        ) {
-            validateToken(authHeader);
-            return ResponseEntity.ok(cneFotosRepository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("CNE_FOTOS", "id", id)));
-        }
-
-        @PostMapping
-        public ResponseEntity<CneFotos> create(@Valid @RequestBody CneFotos foto,
-        @RequestHeader("Authorization") String authHeader) {
-            validateToken(authHeader);
-            return ResponseEntity.status(201).body(cneFotosRepository.save(foto));
-        }
-
-        @PutMapping("/{id}")
-        public ResponseEntity<CneFotos> update(@PathVariable Long id, @Valid @RequestBody CneFotos foto,
-        @RequestHeader("Authorization") String authHeader) {
-            validateToken(authHeader);
-            CneFotos existing = cneFotosRepository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("CNE_FOTOS", "id", id));
-
-            BeanUtils.copyProperties(foto, existing, "id");
-            return ResponseEntity.ok(cneFotosRepository.save(existing));
-        }
-
-        @DeleteMapping("/{id}")
-        public ResponseEntity<?> delete(@PathVariable Long id,
-        @RequestHeader("Authorization") String authHeader) {
-            validateToken(authHeader);
-            return cneFotosRepository.findById(id)
-                    .map(foto -> {
-                        cneFotosRepository.delete(foto);
-                        return ResponseEntity.ok().build();
-                    })
-                    .orElseThrow(() -> new ResourceNotFoundException("CNE_FOTOS", "id", id));
-        }
-    }
 
     private void validateToken(String authHeader) {
         HttpHeaders headers = new HttpHeaders();
@@ -198,21 +181,17 @@ public class CneController {
         }
 
         try {
-            headers.set("Authorization", authHeader); // Enviar el token completo como lo recibimos
-
-            // Crear entidad HTTP
+            headers.set("Authorization", authHeader);
             HttpEntity<?> entity = new HttpEntity<>(headers);
 
-            // Hacer la petición a Flask
-            ResponseEntity<String> response = restTemplate.exchange(
-                FLASK_BASE_URL + "/buscar", // Usar un endpoint que ya sabemos que funciona
-                HttpMethod.GET,
-                entity,
-                String.class
-            );
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    FLASK_BASE_URL + "/validate-token",
+                    HttpMethod.GET,
+                    entity,
+                    new ParameterizedTypeReference<Map<String, Object>>() {});
 
-            // Si llegamos aquí, el token es válido
-            if (response.getStatusCode() != HttpStatus.OK) {
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody == null || !Boolean.TRUE.equals(responseBody.get("valid"))) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido");
             }
 

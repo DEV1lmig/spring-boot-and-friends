@@ -1,20 +1,22 @@
 package com.example.model;
 
-import  jakarta.persistence.*;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 
 @Entity
 @Table(name = "cne")
 public class Cne {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     private Long id;
 
     @Column(name = "nacionalidad", nullable = false)
     @NotBlank(message = "Nacionalidad es obligatoria")
     private String nacionalidad;
 
-    @Column(name = "cedula", nullable = false)
+    @Column(name = "cedula", nullable = false, unique = true)
     @NotBlank(message = "Cédula es obligatoria")
     private String cedula;
 
@@ -45,14 +47,20 @@ public class Cne {
     @Column(name = "huellas")
     private String huellas;
 
+    @OneToMany(mappedBy = "cne", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CneFotos> fotos;
 
-    // Getters y Setters
+
         public String getNacionalidad() {
         return nacionalidad;
     }
 
     public void setNacionalidad(String nacionalidad) {
         this.nacionalidad = nacionalidad;
+    }
+
+    public Long getId() {
+        return id;
     }
 
     public String getCedula() {
@@ -135,4 +143,12 @@ public class Cne {
         this.huellas = huellas;
     }
     public Cne() {}
+
+    public List<CneFotos> getFotos() {
+        return fotos;
+    }
+
+    public void setFotos(List<CneFotos> fotos) {
+        this.fotos = fotos;
+    }
 }

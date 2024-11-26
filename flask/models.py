@@ -7,7 +7,7 @@ class Cne(db.Model):
     __tablename__ = 'cne'
     id = db.Column(db.BigInteger, primary_key=True)
     nacionalidad = db.Column(db.String(15), nullable=False)
-    cedula = db.Column(db.String(15), nullable=False)
+    cedula = db.Column(db.String(15), nullable=False, unique=True)  # Agregamos unique=True
     primer_apellido = db.Column(db.String(50))
     segundo_apellido = db.Column(db.String(50))
     primer_nombre = db.Column(db.String(50))
@@ -18,11 +18,15 @@ class Cne(db.Model):
     foto = db.Column(db.String(65536))
     huellas = db.Column(db.String(65536))
 
+    # Relación uno a muchos con CneFotos
+    fotos = db.relationship('CneFotos', backref='cne', lazy=True, cascade='all, delete-orphan')
+
 class CneFotos(db.Model):
     __tablename__ = 'cne_fotos'
     id = db.Column(db.BigInteger, primary_key=True)
-    cedula = db.Column(db.String(15), nullable=False)
+    cedula = db.Column(db.String(15), db.ForeignKey('cne.cedula'), nullable=False)
     foto = db.Column(db.String(65536), nullable=False)
+
 
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
